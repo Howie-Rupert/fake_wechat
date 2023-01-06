@@ -111,7 +111,7 @@ export default {
         }, 2000);
       } else if (this.userName != "" && this.userPass != "") {
         this.axios({
-          url: "http://www.test.com/fake_wechat_server/account.php",
+          url: "http://150.158.84.153/account.php",
           method: "post",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           data: {
