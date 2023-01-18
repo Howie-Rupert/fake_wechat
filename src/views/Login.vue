@@ -74,6 +74,7 @@ export default {
       loading: false,
       msg: "",
       show_err: false,
+      userid:''
     };
   },
   mounted() {
@@ -95,7 +96,8 @@ export default {
         }, 2000);
       } else if (this.userName != "" && this.userPass != "") {
         this.axios({
-          url: "http://150.158.84.153/login.php",
+          // url: "http://150.158.84.153/login.php",
+          url:'http://www.test.com:8083/login.php',
           method: "post",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           data: {
@@ -108,6 +110,8 @@ export default {
             this.loading = true;
             this.circleUrl = res.data.usericon;
             this.nickname = res.data.nickname;
+            this.userid = res.data.userid;
+            window.localStorage.setItem('userid',this.userid)
             setTimeout(() => {
               this.$router.push("/main");
             }, 3000);

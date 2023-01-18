@@ -46,6 +46,9 @@ async function createWindow() {
   ipcMain.on("closeWindow",e=>{
     win.close()
   })
+  ipcMain.on("closeWindowMain",e=>{
+    win.close()
+  })
 }
 
 // Quit when all windows are closed.
