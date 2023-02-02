@@ -9,7 +9,7 @@
       <img :src="mini_img_or" alt="" />
     </div>
     <div
-      @click="closeWindow"
+      @click.stop="closeWindow"
       @mouseover="close_img_or = close_ac_img"
       @mouseleave="close_img_or = close_img"
       class="close_btn"
@@ -44,14 +44,15 @@ export default {
       show_err: false,
     };
   },
-  methods:{
+  methods: {
     minimize() {
       ipcRenderer.send("minimize");
     },
     closeWindow() {
+      console.log("关闭");
       ipcRenderer.send("closeWindowMain");
     },
-  }
+  },
 };
 </script>
 

@@ -1,76 +1,59 @@
 <template>
   <div class="aside">
-    <div class="content">
-      <div class="messages" v-for="item in messagelist">
-        <div class="messages_item">
-          <el-avatar :size="45" :src="item.usericon"></el-avatar>
-          <div class="texts">
-            <div>{{ item.nickname }}</div>
-            <div>{{ item.message }}</div>
-          </div>
-        </div>
+    <div class="userinfo">
+      <div class="block">
+        <el-avatar shape="square" :size="50" :src="img1"></el-avatar>
       </div>
+      <div class="text_box">
+        <div>USERNAME</div>
+        <div class="user_sign">个性签名</div>
+      </div>
+    </div>
+    <div class="btn_content">
+      <div class="btn" @click="show_list = 0">
+        <img :src="show_list == 0 ? ml_l_img : ml_img" alt="" />
+      </div>
+      <div class="btn" @click="show_list = 1">
+        <img :src="show_list == 1 ? fl_l_img : fl_img" alt="" />
+      </div>
+    </div>
+    <div class="content">
+      <Message v-if="show_list == 0" />
+      <Friend v-if="show_list == 1" />
     </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+import img1 from "../../static/images/userimg.png";
+import ml_img from "../../static/images/message.png";
+import ml_l_img from "../../static/images/message_l.png";
+import fl_img from "../../static/images/friendlist.png";
+import fl_l_img from "../../static/images/friendlist_l.png";
+import Message from "../messagelist";
+import Friend from "../friendlist";
 export default {
   data() {
     return {
       messagelist: [],
       userlist: [],
       userid: "",
+      img1,
+      show_list: 0,
+      ml_img,
+      ml_l_img,
+      fl_img,
+      fl_l_img,
     };
   },
+  components: { Message, Friend },
   mounted() {
     this.userid = window.localStorage.getItem("userid");
     console.log(window.localStorage.getItem("userid"));
-    // this.getuserlist();
-
     this.getmessagelist();
   },
   methods: {
-    // getuserlist() {
-    //   axios({
-    //     url: "http://www.test.com:8083/friendlist.php",
-    //     params: {
-    //       userid: this.userid,
-    //     },
-    //     method: "get",
-    //   }).then((res) => {
-    //     console.log("friendlist", res);
-    //     res.data.data.forEach((item) => {
-    //       var sq = item.sq_userid;
-    //       var bsq = item.bsq_userid;
-    //       if (this.userid != sq) {
-    //         axios({
-    //           url: "http://www.test.com:8083/search.php",
-    //           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    //           method: "post",
-    //           data: {
-    //             userid: sq,
-    //           },
-    //         }).then((res_i) => {
-    //           this.userlist.push(res_i.data.data[0]);
-    //         });
-    //       } else if (this.userid != bsq) {
-    //         axios({
-    //           url: "http://www.test.com:8083/search.php",
-    //           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    //           method: "post",
-    //           data: {
-    //             userid: bsq,
-    //           },
-    //         }).then((res_i) => {
-    //           this.userlist.push(res_i.data.data[0]);
-    //         });
-    //       }
-    //     });
-    //     console.log(this.userlist);
-    //   });
-    // },
     getmessagelist() {
       var userid = window.localStorage.getItem("userid");
       axios({
@@ -89,28 +72,28 @@ export default {
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               method: "post",
               data: {
-                userid:item.from_userid
+                userid: item.from_userid,
               },
             }).then((res_i) => {
-                item.usericon = res_i.data.data[0].usericon
-                item.nickname = res_i.data.data[0].nickname
+              item.usericon = res_i.data.data[0].usericon;
+              item.nickname = res_i.data.data[0].nickname;
             });
-          }else if(item.to_userid != userid){
+          } else if (item.to_userid != userid) {
             axios({
               url: "http://www.test.com:8083/search.php",
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               method: "post",
               data: {
-                userid:item.to_userid
+                userid: item.to_userid,
               },
             }).then((res_i) => {
-                item.usericon = res_i.data.data[0].usericon
-                item.nickname = res_i.data.data[0].nickname
+              item.usericon = res_i.data.data[0].usericon;
+              item.nickname = res_i.data.data[0].nickname;
             });
           }
         });
-        this.messagelist = res.data.data
-        console.log(this.messagelist)
+        this.messagelist = res.data.data;
+        console.log(this.messagelist);
       });
     },
   },
@@ -120,7 +103,7 @@ export default {
 <style scoped>
 .aside {
   width: calc(100% - 1px);
-  height: calc(100vh - 60px);
+  height: 100vh;
   border-right: 1px solid #eee;
   overflow: hidden;
 }
@@ -145,5 +128,43 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-align: left;
+}
+.userinfo {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+.text_box {
+  margin-left: 10px;
+  text-align: left;
+  padding-top: 5px;
+}
+.user_sign {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #b8b7b7;
+}
+.userimg {
+  width: 64px;
+  height: 64px;
+}
+.btn_content {
+  width: 100%;
+  display: flex;
+}
+.btn {
+  width: 50%;
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.btn > img {
+  width: 30px;
 }
 </style>

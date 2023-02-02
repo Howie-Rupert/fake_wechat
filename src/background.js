@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow,ipcMain } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -15,7 +15,7 @@ async function createWindow() {
   const win = new BrowserWindow({
     width: 300,
     height: 400,
-    frame:false,
+    frame: false,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -33,21 +33,21 @@ async function createWindow() {
     // Load the index.html when not in development
     win.loadURL('app://./index.html')
   }
-  ipcMain.on("Login",e=>{
-    win.setSize(300,400)
-    
+  ipcMain.on("Login", e => {
+    win.setSize(300, 400)
+
   })
-  ipcMain.on("LoginSuccess",e=>{
-    win.setSize(1050,700)
+  ipcMain.on("LoginSuccess", e => {
+    win.setSize(1050, 700)
   })
-  ipcMain.on("minimize",e=>{
+  ipcMain.on("minimize", e => {
     win.minimize()
   })
-  ipcMain.on("closeWindow",e=>{
-    win.close()
+  ipcMain.on("closeWindow", e => {
+    app.exit()
   })
-  ipcMain.on("closeWindowMain",e=>{
-    win.close()
+  ipcMain.on("closeWindowMain", e => {
+    app.exit()
   })
 }
 

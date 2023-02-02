@@ -6008,6 +6008,11 @@
     "merge-stream" "^2.0.0"
     "supports-color" "^8.0.0"
 
+"jian-pinyin@^0.2.3":
+  "integrity" "sha512-FjE1EaE3A+/xtsJ+UyOma7dqYzuqWsM4AOlFO9TMHq/5KjQcwiMbntCCp7A4Crta7vJC4+TC2thM+ry2RNL6UQ=="
+  "resolved" "https://registry.npmjs.org/jian-pinyin/-/jian-pinyin-0.2.3.tgz"
+  "version" "0.2.3"
+
 "joi@^17.4.0":
   "integrity" "sha512-1/ugc8djfn93rTE3WRKdCzGGt/EtiYKxITMO4Wiv6q5JL1gl9ePt4kBsl1S499nbosspfctIQTpYIhSmHA3WAg=="
   "resolved" "https://registry.npmmirror.com/joi/-/joi-17.7.0.tgz"

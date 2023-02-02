@@ -1,11 +1,12 @@
 <template>
   <!-- <div @click="back_pg">mainpage</div> -->
   <el-container>
-    <el-header> <drag /> </el-header>
+    <el-aside class="el_aside" width="300px">
+      <a_side />
+    </el-aside>
     <el-container>
-      <el-aside width="200px"> 
-        <a_side /> 
-        </el-aside>
+      <el-header class="el_header"> <drag /> </el-header>
+
       <el-main>Main</el-main>
     </el-container>
   </el-container>
@@ -31,5 +32,12 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
+.el_header {
+  position: relative;
+}
+.el_aside {
+  height: 100%;
+  min-height: 100vh;
+}
 </style>
