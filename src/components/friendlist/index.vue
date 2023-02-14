@@ -119,6 +119,9 @@ export default {
   height: calc(100vh - 100px);
   overflow-y: auto;
 }
+.friendlistbody::-webkit-scrollbar {
+  width: 0 !important;
+}
 .friendrow {
   height: auto;
   width: 100%;

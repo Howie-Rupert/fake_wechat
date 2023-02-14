@@ -130,10 +130,11 @@ export default {
   text-align: left;
 }
 .userinfo {
-  width: 100%;
-  height: 40px;
+  width: calc(100% -40px);
+  height: 50px;
   display: flex;
-  padding: 20px;
+  padding: 10px 20px 10px 20px;
+  /* padding: 20px; */
   border-bottom: 1px solid #eee;
 }
 .text_box {
