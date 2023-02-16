@@ -3,10 +3,46 @@
     <div class="bodyname">
       {{ username }}
     </div>
-    <div class="his_message">
-      <img ref="yourImgDom" src="" alt="" />
+    <div class="his_message" ref="his_message">
+      <div v-for="(item, index) in message">
+        <div class="timestamp">{{ renderMessageDate(item, index) }}</div>
+        <div class="message_list">
+          <div v-if="currentid == item.from_userid" class="senduser">
+            <el-avatar
+              :size="35"
+              :src="circleUrl"
+              class="from_avatar"
+            ></el-avatar>
+            <div class="from_message" v-if="item.message_type == 1">
+              <div>
+                {{ item.message }}
+              </div>
+              <div class="bottom_arrow_send"></div>
+            </div>
+            <div v-if="item.message_type == 2" class="imgmessage">
+              <img @click="openimg(item.message)" :src="item.message" alt="" />
+            </div>
+          </div>
+          <div v-else class="sendeduser">
+            <el-avatar
+              :size="35"
+              :src="circleUrl"
+              class="to_avatar"
+            ></el-avatar>
+            <div class="to_message" v-if="item.message_type == 1">
+              <div>
+                {{ item.message }}
+              </div>
+              <div class="bottom_arrow_to"></div>
+            </div>
+            <div v-if="item.message_type == 2" class="imgmessage">
+              <img @click="openimg(item.message)" :src="item.message" alt="" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
+    <div class="kong"></div>
     <div class="send_message">
       <div class="action-bar">
         <!-- 表情 -->
@@ -39,11 +75,11 @@
             <FileUpload for="video-input" @input="filelist"></FileUpload>
           </label>
         </div>
-        <div class="action-item">
+        <!-- <div class="action-item">
           <label for="file-input">
             <i @click="screen" class="iconfont icon-paizhao" title="表情"></i>
           </label>
-        </div>
+        </div> -->
       </div>
       <Emoji class="emojibox" @emoji_click="emoji" v-show="showEmoji" />
       <el-input
@@ -53,10 +89,11 @@
         @blur="handleInputBlur"
         :rows="5"
         v-model="textarea"
-        maxlength="200"
+        maxlength="2000"
         refs="drag-input"
       >
       </el-input>
+      <div class="sendbtn">发送</div>
     </div>
   </div>
 </template>
@@ -66,20 +103,87 @@ import Emoji from "../../components/emoji";
 import ImgUpload from "../../components/Imageupload";
 import VideoUpload from "../../components/Videoupload";
 import FileUpload from "../../components/FileUpload";
-import { ipcRenderer, desktopCapturer } from "electron";
-
+import { ipcRenderer, desktopCapturer, BrowserWindow } from "electron";
+import { formatDate } from "../../utils/utils";
+import img1 from "../../assets/ava.jpg";
+import img2 from "../../static/images/img1.png";
 export default {
   components: { Emoji, ImgUpload, VideoUpload, FileUpload },
   data() {
     return {
+      circleUrl:
+        "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png",
       username: "USERNAME",
       showEmoji: false,
       textarea: "",
       cursorIndex: "",
+      currentid: "16",
+      message: [
+        {
+          timestamp: 1676447963084,
+          from_userid: "16",
+          to_userid: "17",
+          message_type: "1",
+          message: "测试",
+        },
+        {
+          timestamp: 1676447963084,
+          from_userid: "16",
+          to_userid: "17",
+          message_type: "2",
+          message: img1,
+        },
+        {
+          timestamp: 1676447963084,
+          from_userid: "17",
+          to_userid: "16",
+          message_type: "2",
+          message: img2,
+        },
+        {
+          timestamp: 1676447964084,
+          from_userid: "17",
+          to_userid: "16",
+          message_type: "1",
+          message: "测试1",
+        },
+        {
+          timestamp: 1676447965084,
+          from_userid: "16",
+          to_userid: "17",
+          message_type: "1",
+          message:
+            "测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2",
+        },
+        {
+          timestamp: 1676448470499,
+          from_userid: "16",
+          to_userid: "17",
+          message_type: "1",
+          message: "测试3",
+        },
+        {
+          timestamp: 1676448470499,
+          from_userid: "17",
+          to_userid: "16",
+          message_type: "1",
+          message: "测试4",
+        },
+      ],
     };
   },
-  mounted() {},
+  mounted() {
+    console.log(Date.now());
+    this.$nextTick(() => {
+      var div = this.$refs.his_message;
+      div.scrollTop = div.scrollHeight;
+      console.log("scrollHeight", div.scrollHeight);
+      console.log("scrolltop", div.scrollTop);
+    });
+  },
+
   methods: {
+    formatDate,
     emoji(index) {
       console.log("父组件", index);
       var s1 = this.textarea;
@@ -121,6 +225,24 @@ export default {
           ipcRenderer.invoke("showWindow"); //屏幕拍照完成后，再显示这个窗口，不然它也会被拍进去
         });
     },
+    //计算间隔时间
+    renderMessageDate(message, index) {
+      if (index === 0) {
+        return this.formatDate(message.timestamp);
+      } else {
+        if (
+          message.timestamp - this.message[index - 1].timestamp >
+          5 * 60 * 1000
+        ) {
+          return this.formatDate(message.timestamp);
+        }
+      }
+      return "";
+    },
+    openimg(img) {
+      localStorage.setItem('data',img)      
+      ipcRenderer.send("newwindow");
+    },
   },
 };
 </script>
@@ -144,33 +266,36 @@ export default {
   height: calc(100% - 200px);
   width: 100%;
   overflow: auto;
+  background-color: #f5f5f5;
 }
 .send_message {
   position: relative;
   width: 100%;
   height: 200px;
-  background-color: #fff;
+  background-color: #f5f5f5;
   border-top: 1px solid #d6d6d6;
 }
 /deep/ .el-textarea__inner {
   width: 100%;
-  height: 100%;
+  height: 92%;
   resize: none;
   border: none !important;
+  background-color: #f5f5f5;
 }
 .textar {
   width: 100% !important;
-  height: 100% !important;
+  height: calc(100% - 120px) !important;
   overflow: auto;
+  background-color: #f5f5f5;
 }
-.textar::-webkit-scrollbar {
+/deep/.el-textarea__inner::-webkit-scrollbar {
   width: 10px;
 }
-.textar::-webkit-scrollbar-thumb {
+/deep/.el-textarea__inner::-webkit-scrollbar-thumb {
   border-radius: 5px;
-  background: #bab9b9;
+  background: #d2d2d2;
 }
-.textar::-webkit-scrollbar-button {
+/deep/.el-textarea__inner::-webkit-scrollbar-button {
   width: 10px;
   border-radius: 50%;
   background: black;
@@ -332,5 +457,106 @@ export default {
 .emojibox {
   position: absolute;
   top: -320px;
+}
+.sendbtn {
+  width: 70px;
+  height: 30px;
+  float: right;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  border-radius: 5px;
+  color: #0cd16b;
+  font-size: 14px;
+  background-color: #e9e9e9;
+}
+.senduser {
+  display: flex;
+  width: calc(100% - 20px);
+  justify-content: flex-start;
+  flex-direction: row-reverse;
+  padding: 0 10px 0 10px;
+  height: auto;
+  position: relative;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.sendeduser {
+  position: relative;
+  display: flex;
+  float: left;
+  width: calc(100% - 20px);
+  height: auto;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 0 10px 0 10px;
+}
+.from_avatar {
+  margin-left: 10px;
+}
+.to_avatar {
+  margin-right: 10px;
+}
+.from_message {
+  width: auto;
+  max-width: 80%;
+  height: auto;
+  padding: 10px;
+  background-color: #95ec69;
+  border-radius: 5px;
+  z-index: 2;
+  text-align: left;
+}
+.to_message {
+  width: auto;
+  height: auto;
+  padding: 10px;
+  background-color: #fff;
+  z-index: 2;
+  border-radius: 5px;
+}
+
+.bottom_arrow_send {
+  position: absolute;
+  right: 45px;
+  top: 8px;
+  width: 0.75rem;
+  height: 0.75rem;
+  transform: translate(-50%, 50%) rotate(45deg);
+  background-color: #95ec69;
+  z-index: 1;
+}
+.bottom_arrow_to {
+  position: absolute;
+  left: 55px;
+  top: 8px;
+  width: 0.75rem;
+  height: 0.75rem;
+  transform: translate(-50%, 50%) rotate(45deg);
+  background-color: #fff;
+  z-index: 1;
+}
+.kong {
+  width: 100%;
+  height: 10px;
+  background-color: #f5f5f5;
+}
+
+/deep/.his_message::-webkit-scrollbar {
+  width: 10px;
+}
+/deep/.his_message::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background: #d2d2d2;
+}
+/deep/.his_message::-webkit-scrollbar-button {
+  width: 10px;
+  border-radius: 50%;
+  background: black;
+  display: none;
+}
+.imgmessage > img {
+  max-width: 200px;
 }
 </style>
