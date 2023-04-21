@@ -1,12 +1,16 @@
 <template>
   <div class="aside">
-    <div class="userinfo">
+    <div class="userinfo" @click="openmyview">
       <div class="block">
-        <el-avatar shape="square" :size="50" :src="img1"></el-avatar>
+        <el-avatar
+          shape="square"
+          :size="50"
+          :src="userinfo.usericon"
+        ></el-avatar>
       </div>
       <div class="text_box">
-        <div>USERNAME</div>
-        <div class="user_sign">个性签名</div>
+        <div class="nickname">{{ userinfo.nickname }}</div>
+        <div class="user_sign">{{ userinfo.slog }}</div>
       </div>
     </div>
     <div class="btn_content">
@@ -21,6 +25,30 @@
       <Message v-if="show_list == 0" />
       <Friend v-if="show_list == 1" />
     </div>
+    <div class="search">
+      <img
+        @click="logout"
+        class="add_fri"
+        src="../../static/images/logout.png"
+        alt=""
+      />
+      <img
+        @click="openFri"
+        class="add_fri"
+        src="../../static/images/add_fri.png"
+        alt=""
+      />
+      <img
+        class="add_fri"
+        @click="showAddmenu = !showAddmenu"
+        src="../../static/images/menu.png"
+        alt=""
+      />
+      <div class="addmenu" v-if="showAddmenu">
+        <div class="addtexts" @click="goutogroup">创建群组</div>
+        <div class="addtexts" @click="openShenqing">好友申请</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -33,6 +61,8 @@ import fl_img from "../../static/images/friendlist.png";
 import fl_l_img from "../../static/images/friendlist_l.png";
 import Message from "../messagelist";
 import Friend from "../friendlist";
+import { mapGetters } from "vuex";
+import { ipcRenderer, ipcMain } from "electron";
 export default {
   data() {
     return {
@@ -45,19 +75,64 @@ export default {
       ml_l_img,
       fl_img,
       fl_l_img,
+      userinfo: "",
+      time: "",
+      otheruser: "",
+      showAddmenu: false,
     };
   },
   components: { Message, Friend },
   mounted() {
-    this.userid = window.localStorage.getItem("userid");
-    console.log(window.localStorage.getItem("userid"));
-    this.getmessagelist();
+    this.userid = this.$store.state.userid;
+    // this.userid = 16;
+    this.getthisUserinfo(this.userid);
+    this.time = setInterval(() => {
+      this.haschange = localStorage.getItem("haschange");
+      if (this.haschange == 1) {
+        this.getthisUserinfo(this.userid);
+        localStorage.setItem("haschange", 0);
+      }
+    }, 200);
+    ipcRenderer.on("message", (event, userinfo) => {
+      // 执行相关操作
+      this.getthisUserinfo(this.userid);
+    });
+  },
+  beforeDestroy() {
+    clearInterval(this.time);
+  },
+  computed: {
+    ...mapGetters(["contectuser"]),
+    otherUserId() {
+      return this.contectuser;
+    },
+  },
+  watch: {
+    otherUserId(newData, oldData) {
+      this.otheruser = newData;
+      if (newData != oldData) {
+        this.show_list = 0;
+      }
+    },
   },
   methods: {
+    getthisUserinfo(id) {
+      axios({
+        url: this.baseUrl + "getUserinfo.php",
+        method: "get",
+        params: {
+          userid: id,
+        },
+      }).then((res) => {
+        console.log(res);
+        this.userinfo = res.data.data[0];
+        console.log("userinfo", this.userinfo);
+      });
+    },
     getmessagelist() {
       var userid = window.localStorage.getItem("userid");
       axios({
-        url: "http://www.test.com:8083/message.php",
+        url: this.baseUrl + "message.php",
         method: "post",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         data: {
@@ -68,7 +143,7 @@ export default {
         res.data.data.forEach((item) => {
           if (item.from_userid != userid) {
             axios({
-              url: "http://www.test.com:8083/search.php",
+              url: this.baseUrl + "search.php",
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               method: "post",
               data: {
@@ -80,7 +155,7 @@ export default {
             });
           } else if (item.to_userid != userid) {
             axios({
-              url: "http://www.test.com:8083/search.php",
+              url: this.baseUrl + "search.php",
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               method: "post",
               data: {
@@ -96,6 +171,28 @@ export default {
         console.log(this.messagelist);
       });
     },
+    openFri() {
+      ipcRenderer.send("addfriend", this.$store.state.userid);
+    },
+    openShenqing() {
+      this.showAddmenu = false;
+
+      ipcRenderer.send("shenqing", this.$store.state.userid);
+    },
+    goutogroup() {
+      this.showAddmenu = false;
+      ipcRenderer.send("groupAdd", this.$store.state.userid);
+    },
+    logout() {
+      this.$store.commit("SET_USERID", "");
+      this.$store.commit("SET_TOUSER", "");
+      this.$store.commit("SET_MESSAGE", "");
+      localStorage.clear();
+      this.$router.push("/");
+    },
+    openmyview() {
+      ipcRenderer.send("myinfo", this.$store.state.userid);
+    },
   },
 };
 </script>
@@ -105,12 +202,26 @@ export default {
   width: calc(100% - 1px);
   height: 100vh;
   border-right: 1px solid #eee;
-  overflow: hidden;
+  position: relative;
 }
 .content {
-  height: auto;
+  height: calc(100% - 150px);
   display: flex;
+  overflow: auto;
   flex-direction: column;
+}
+/deep/.content::-webkit-scrollbar {
+  width: 10px;
+}
+/deep/.content::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background: #d2d2d2;
+}
+/deep/.content::-webkit-scrollbar-button {
+  width: 10px;
+  border-radius: 50%;
+  background: black;
+  display: none;
 }
 .messages_item {
   width: 100%;
@@ -136,6 +247,7 @@ export default {
   padding: 10px 20px 10px 20px;
   /* padding: 20px; */
   border-bottom: 1px solid #eee;
+  cursor: pointer;
 }
 .text_box {
   margin-left: 10px;
@@ -146,6 +258,8 @@ export default {
   font-size: 12px;
   margin-top: 5px;
   color: #b8b7b7;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .userimg {
   width: 64px;
@@ -167,5 +281,54 @@ export default {
 }
 .btn > img {
   width: 30px;
+}
+.search {
+  width: 100%;
+  height: 40px;
+  border-bottom: 1px solid #d6d6d6;
+  border-top: 1px solid #d6d6d6;
+  position: absolute;
+  bottom: 0px;
+  display: flex;
+  align-items: center;
+  position: fixed;
+  bottom: 0;
+  background-color: #ffffff;
+}
+.add_fri {
+  width: 30px;
+  height: 30px;
+  margin-left: 20px;
+  cursor: pointer;
+}
+.addmenu {
+  position: fixed;
+  width: 100px;
+  height: 40px;
+  border: 1px solid #f5f5f5;
+  bottom: 42px;
+  left: 110px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  justify-content: center;
+  align-items: center;
+}
+.addtexts {
+  font-size: 12px;
+  height: 20px;
+  display: flex;
+  width: calc(100% - 10px);
+  align-items: center;
+  padding-left: 10px;
+  cursor: pointer;
+}
+.addtexts:first-child {
+  border-bottom: 1px solid #f5f5f5;
+}
+.nickname{
+  width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

@@ -1,16 +1,41 @@
 <template>
   <div class="messagebody">
     <div class="bodyname">
-      {{ username }}
+      <div v-if="$store.state.contectuser.indexOf('!!!') == '-1'">
+        {{ otherUserInfo.nickname }}
+      </div>
+      <div v-if="$store.state.contectuser.indexOf('!!!') != '-1'">
+        <div @click="changeGroupname = false" v-if="changeGroupname">
+          {{ otherUserInfo.nickname }}
+        </div>
+        <div v-else>
+          <input
+            type="text"
+            v-model="otherUserInfo.nickname"
+            @blur="changeGroupInfo"
+          />
+        </div>
+      </div>
+      <div class="otherControl" @click="showEdit">
+        <img src="../../static/images/eil.png" alt="" />
+      </div>
     </div>
     <div class="his_message" ref="his_message">
-      <div v-for="(item, index) in message">
+      <div
+        v-for="(item, index) in message"
+        v-if="
+          item.delby != null && item.delby != ''
+            ? Number(item.delby.indexOf($store.state.userid)) === Number(-1)
+            : true
+        "
+      >
         <div class="timestamp">{{ renderMessageDate(item, index) }}</div>
         <div class="message_list">
-          <div v-if="currentid == item.from_userid" class="senduser">
+          <div v-if="$store.state.userid == item.from_userid" class="senduser">
+            <!-- <div v-if="16 == item.from_userid" class="senduser"> -->
             <el-avatar
               :size="35"
-              :src="circleUrl"
+              :src="currentUserInfo.usericon"
               class="from_avatar"
             ></el-avatar>
             <div class="from_message" v-if="item.message_type == 1">
@@ -20,24 +45,127 @@
               <div class="bottom_arrow_send"></div>
             </div>
             <div v-if="item.message_type == 2" class="imgmessage">
-              <img @click="openimg(item.message)" :src="item.message" alt="" />
+              <img
+                @click="openimg(item.message, 'img')"
+                :src="item.message"
+                alt=""
+              />
             </div>
+            <div v-if="item.message_type == 3" class="imgmessage">
+              <video
+                :src="item.message"
+                @click="openimg(item.message, 'video')"
+              ></video>
+              <img
+                @dragstart.prevent
+                class="pause_btn"
+                @click="openimg(item.message, 'video')"
+                src="../../static/images/pause.png"
+                alt=""
+              />
+            </div>
+            <a
+              v-if="item.message_type == 4"
+              :href="item.message"
+              download="download"
+            >
+              <div class="content-file" title="点击下载">
+                <div class="file-info">
+                  <span class="file-name">{{ item.messageName }}</span>
+                  <!-- <span class="file-size"
+                          >{{
+                            (message.payload.size / 1024).toFixed(2)
+                          }}KB</span
+                        > -->
+                </div>
+                <img class="file-img" src="../../static/images/file-icon.png" />
+              </div>
+            </a>
           </div>
           <div v-else class="sendeduser">
             <el-avatar
               :size="35"
-              :src="circleUrl"
+              :src="
+                item.from_userIcon != undefined
+                  ? item.from_userIcon
+                  : otherUserInfo.usericon
+              "
               class="to_avatar"
             ></el-avatar>
-            <div class="to_message" v-if="item.message_type == 1">
+            <span class="groupMemName" v-if="item.from_userName != undefined">{{
+              item.from_userName
+            }}</span>
+            <div
+              :class="
+                item.from_userName != undefined ? 'to_message2' : 'to_message'
+              "
+              v-if="item.message_type == 1"
+            >
               <div>
                 {{ item.message }}
               </div>
-              <div class="bottom_arrow_to"></div>
+              <div
+                :class="
+                  item.from_userName != undefined
+                    ? 'bottom_arrow_to2'
+                    : 'bottom_arrow_to'
+                "
+              ></div>
             </div>
-            <div v-if="item.message_type == 2" class="imgmessage">
-              <img @click="openimg(item.message)" :src="item.message" alt="" />
+            <div
+              v-if="item.message_type == 2"
+              :class="
+                item.from_userName != undefined ? 'imgmessage2' : 'imgmessage'
+              "
+            >
+              <img
+                @click="openimg(item.message, 'img')"
+                :src="item.message"
+                alt=""
+              />
             </div>
+            <div
+              v-if="item.message_type == 3"
+              :class="
+                item.from_userName != undefined ? 'imgmessage2' : 'imgmessage'
+              "
+            >
+              <video
+                :src="item.message"
+                @click="openimg(item.message, 'video')"
+              ></video>
+              <img
+                @dragstart.prevent
+                @click="openimg(item.message, 'video')"
+                class="pause_btn"
+                src="../../static/images/pause.png"
+                alt=""
+              />
+            </div>
+            <a
+              v-if="item.message_type == 4"
+              :href="item.message"
+              download="download"
+            >
+              <div
+                :class="
+                  item.from_userName != undefined
+                    ? 'content-file2'
+                    : 'content-file'
+                "
+                title="点击下载"
+              >
+                <div class="file-info">
+                  <span class="file-name">{{ item.messageName }}</span>
+                  <!-- <span class="file-size"
+                          >{{
+                            (message.payload.size / 1024).toFixed(2)
+                          }}KB</span
+                        > -->
+                </div>
+                <img class="file-img" src="../../static/images/file-icon.png" />
+              </div>
+            </a>
           </div>
         </div>
       </div>
@@ -67,12 +195,12 @@
         </div>
         <!-- 视频 -->
         <div class="action-item">
-          <VideoUpload for="video-input" @input="filelist"></VideoUpload>
+          <VideoUpload for="video-input" @input="filelist1"></VideoUpload>
         </div>
         <!-- 文件 -->
         <div class="action-item">
           <label for="file-input">
-            <FileUpload for="video-input" @input="filelist"></FileUpload>
+            <FileUpload for="video-input" @input="filelist2"></FileUpload>
           </label>
         </div>
         <!-- <div class="action-item">
@@ -93,7 +221,79 @@
         refs="drag-input"
       >
       </el-input>
-      <div class="sendbtn">发送</div>
+      <div class="sendbtn" @click="sendmessage">发送</div>
+    </div>
+    <div class="hidden" v-if="showControl" @click="showControl = false">
+      <div class="cotBody">
+        <div v-if="contGroup" class="cotItem2" @click="editGroupMember">
+          添加好友入群
+        </div>
+        <div class="cotItem" @click.stop="delmessage">删除聊天记录</div>
+        <div v-if="contGroup" class="cotItem" @click="deleteDataG">
+          退出群聊
+        </div>
+      </div>
+    </div>
+
+    <div class="editgroupmember" v-if="showAddMember">
+      <div class="mainbody">
+        <div class="friendlist">
+          <el-checkbox-group v-model="checkList" @change="showinfo">
+            <div v-for="item in afterSortList" class="friendrow">
+              <div class="sort" :style="connn(item) ? 'disabled' : ''">
+                {{ item.sort }}
+              </div>
+              <div v-for="ite in item.list" class="name_img">
+                <el-checkbox class="checkbox" :label="ite.id"> </el-checkbox>
+                <img class="userimg" :src="ite.usericon" alt="" />
+                <div class="username">
+                  {{ ite.nickname }}
+                </div>
+              </div>
+            </div>
+          </el-checkbox-group>
+        </div>
+        <div class="chooselist">
+          <p>选择联系人</p>
+          <div class="mainchoosebody">
+            <div v-if="checkUser.length != 0" class="chooseBodyList">
+              <div
+                v-if="item.id != $store.state.userid"
+                v-for="(item, index) in checkUser"
+                class="checkUserCon"
+              >
+                <img
+                  class="closeBtn"
+                  src="../../static/images/groupclose.png"
+                  alt=""
+                  @click="delSelect(index, item.id)"
+                />
+                <img class="checkUserIcon" :src="item.usericon" alt="" />
+                <span class="checkUserName">{{ item.nickname }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="btns">
+            <div
+              @click="addGroup"
+              :class="checkUser.length > 0 ? 'btnitem success' : 'btnitem'"
+            >
+              完成
+            </div>
+            <div class="btnitem" @click="closeWindow">取消</div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="big_block"
+        v-show="show_success"
+        @click="show_success = false"
+      >
+        <div class="dialog1">{{ msg }}</div>
+      </div>
+      <div class="big_block" v-show="show_err" @click="show_err = false">
+        <div class="dialog">{{ msg }}</div>
+      </div>
     </div>
   </div>
 </template>
@@ -105,8 +305,9 @@ import VideoUpload from "../../components/Videoupload";
 import FileUpload from "../../components/FileUpload";
 import { ipcRenderer, desktopCapturer, BrowserWindow } from "electron";
 import { formatDate } from "../../utils/utils";
-import img1 from "../../assets/ava.jpg";
-import img2 from "../../static/images/img1.png";
+import axios from "axios";
+import { mapGetters } from "vuex";
+import { getSpell } from "jian-pinyin";
 export default {
   components: { Emoji, ImgUpload, VideoUpload, FileUpload },
   data() {
@@ -117,72 +318,396 @@ export default {
       showEmoji: false,
       textarea: "",
       cursorIndex: "",
-      currentid: "16",
-      message: [
-        {
-          timestamp: 1676447963084,
-          from_userid: "16",
-          to_userid: "17",
-          message_type: "1",
-          message: "测试",
-        },
-        {
-          timestamp: 1676447963084,
-          from_userid: "16",
-          to_userid: "17",
-          message_type: "2",
-          message: img1,
-        },
-        {
-          timestamp: 1676447963084,
-          from_userid: "17",
-          to_userid: "16",
-          message_type: "2",
-          message: img2,
-        },
-        {
-          timestamp: 1676447964084,
-          from_userid: "17",
-          to_userid: "16",
-          message_type: "1",
-          message: "测试1",
-        },
-        {
-          timestamp: 1676447965084,
-          from_userid: "16",
-          to_userid: "17",
-          message_type: "1",
-          message:
-            "测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2测试2",
-        },
-        {
-          timestamp: 1676448470499,
-          from_userid: "16",
-          to_userid: "17",
-          message_type: "1",
-          message: "测试3",
-        },
-        {
-          timestamp: 1676448470499,
-          from_userid: "17",
-          to_userid: "16",
-          message_type: "1",
-          message: "测试4",
-        },
-      ],
+      currentid: "",
+      to_userId: "",
+      otherUserInfo: {
+        nickname: "",
+      },
+      message: [],
+      otheruser: "",
+      groupId: "",
+      currentUserInfo: "",
+      wsUrl: "ws://150.158.84.153/ws", // ws地址
+      // wsUrl: "ws://127.0.0.1:1234", // ws地址
+      websock: null, // ws实例
+      message: "",
+      timeout: 6000,
+      timeoutObj: "",
+      serverTimeoutObj: "",
+      repeatGroupId: [],
+      isFinish: true,
+      showControl: false,
+      contGroup: false,
+      changeGroupname: true,
+      friendlist: "",
+      show_success: false,
+      show_err: false,
+      pylist: [],
+      afterSortList: [],
+      friendlistss: [],
+      checkList: [],
+      checkList2: [],
+      checkUser: [],
+      myinfo: "",
+      msg: "",
+      groupName: "",
+      showAddMember: false,
     };
   },
   mounted() {
+    this.initWebSocket();
     console.log(Date.now());
+    axios({
+      url: this.baseUrl + "getUserinfo.php",
+      method: "get",
+      params: {
+        userid: this.$store.state.userid,
+        // userid: 16,
+      },
+    }).then((res) => {
+      if (res.data.code == 200) {
+        this.currentUserInfo = res.data.data[0];
+      }
+    });
+    this.otheruser = this.$store.state.contectuser;
+    this.getmessagelist();
+    this.getUserInfo();
     this.$nextTick(() => {
-      var div = this.$refs.his_message;
-      div.scrollTop = div.scrollHeight;
-      console.log("scrollHeight", div.scrollHeight);
-      console.log("scrolltop", div.scrollTop);
+      this.$refs.his_message.scrollTop = this.$refs.his_message.scrollHeight;
     });
   },
+  computed: {
+    ...mapGetters(["contectuser"]),
+    otherUserId() {
+      return this.contectuser;
+    },
+  },
 
+  watch: {
+    otherUserId(newData, oldData) {
+      this.otheruser = newData;
+      this.getmessagelist();
+      this.getUserInfo();
+    },
+  },
+  beforeDestroy() {
+    this.websock.close();
+  },
   methods: {
+    connn(data) {
+      if (data) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+    deleteDataG() {
+      this.showControl = false;
+      this.$confirm("确认退出群聊?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+      })
+        .then(() => {
+          var userId = this.$store.state.userid;
+          var toUserId = this.$store.state.contectuser;
+          var params = {
+            userId: userId,
+            groupId: toUserId.split("!!!")[1],
+          };
+          axios({
+            url: this.baseUrl + "delGroup.php",
+            method: "get",
+            params,
+          }).then((res) => {
+            this.$message({
+              message: "删除成功!",
+            });
+            this.$store.commit("SET_TOUSER", "006");
+          });
+        })
+        .catch(() => {});
+    },
+    delmessage() {
+      this.showControl = false;
+      console.log(this.$store.state.userid);
+      console.log(this.$store.state.contectuser);
+      var userId = this.$store.state.userid;
+      var toUserId = this.$store.state.contectuser;
+      if (toUserId.indexOf("!!!") != -1) {
+        var params = {
+          userId: userId,
+          groupId: toUserId.split("!!!")[1],
+        };
+      } else {
+        var params = {
+          userId: userId,
+          touserId: toUserId,
+        };
+      }
+
+      this.$confirm("确认清空消息记录?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+      })
+        .then(() => {
+          axios({
+            url: "/api/delmessage.php",
+            method: "get",
+            params,
+          }).then((res) => {
+            this.getmessagelist();
+            this.$message({
+              message: "删除成功!",
+            });
+          });
+        })
+        .catch(() => {});
+    },
+    reset() {
+      clearTimeout(this.timeoutObj);
+      clearTimeout(this.serverTimeoutObj);
+      return this;
+    },
+    start() {
+      var that = this;
+      this.serverTimeoutObj = setInterval(function () {
+        console.log("websocket", that.websock.readyState === 1);
+        if (that.websock.readyState === 1) {
+          console.log("连接状态，发送消息保持连接");
+          that.websock.send("socket heart"); // 连接成功将消息传给服务端
+          that.reset();
+          that.start(); // 如果获得消息 说明连接正常 重置心跳检测
+        } else {
+          console.log("断开连接， 尝试重连");
+          that.initWebSocket();
+        }
+      }, this.timeout);
+    },
+    // 初始化weosocket
+    initWebSocket() {
+      if (typeof WebSocket === "undefined")
+        return console.log("您的浏览器不支持websocket");
+      this.websock = new WebSocket(this.wsUrl);
+      this.websock.onmessage = this.websocketonmessage;
+      this.websock.onopen = this.websocketonopen;
+      this.websock.onerror = this.websocketonerror;
+      this.websock.onclose = this.websocketclose;
+    },
+    websocketonopen() {
+      this.reset();
+      this.start(); // 成功建立连接后，重置心跳检测
+      // 连接建立之后执行send方法发送数据
+      let actions = {
+        type: "login",
+        msg: this.$store.state.userid + "用户进入",
+        userid: this.$store.state.userid,
+        // msg: 16 + "用户进入",
+        // userid: 16,
+      };
+      this.websocketsend(JSON.stringify(actions));
+    },
+    websocketonerror() {
+      // 连接建立失败重连
+      this.initWebSocket();
+    },
+    websocketonmessage(e) {
+      // 数据接收
+      const redata = JSON.parse(e.data);
+      console.log("接收的数据", redata);
+      this.getmessagelist();
+      this.$store.commit("SET_MESSAGE", true);
+      // setTimeout(() => {
+      //   this.reset();
+      //   this.start();
+      // }, 10000);
+    },
+    websocketsend(Data) {
+      // 数据发送
+      this.websock.send(Data);
+      this.$store.commit("SET_MESSAGE", true);
+    },
+    websocketclose(e) {
+      // 关闭
+      console.log("断开连接", e);
+    },
+    before_ws_send() {
+      var to_userId = this.otherUserId;
+      if (this.otherUserId.indexOf("!!!") != -1) {
+        var data = {
+          type: "group",
+          to_userid: "",
+          msg: "1",
+        };
+        this.websocketsend(JSON.stringify(data));
+
+        // axios({
+        //   url: this.baseUrl + "groupList.php",
+        //   method: "get",
+        //   params: {
+        //     groupId: this.otherUserId.split("!!!")[1],
+        //   },
+        // }).then((res) => {
+        //   console.log("groupInfo", res.data.data[0]);
+        //   var shouldSendUsers = res.data.data[0].memberUser.split(";");
+        //   shouldSendUsers.forEach((item) => {
+        //     if (item != "") {
+        //       var data = {
+        //         type: "user",
+        //         to_userid: item,
+        //         msg: "1",
+        //       };
+        //       if (this.isFinish == true) {
+        //         this.isFinish = false;
+        //         this.websocketsend(JSON.stringify(data));
+        //         console.log("群发websocket", item);
+        //       }
+        //     }
+        //   });
+        // });
+      } else {
+        var data = {
+          type: "user",
+          to_userid: to_userId,
+          msg: "1",
+        };
+        this.websocketsend(JSON.stringify(data));
+      }
+    },
+    changeGroupInfo() {
+      console.log(this.otherUserInfo.nickname);
+      axios({
+        url: this.baseUrl + "editGroup.php",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "post",
+        data: {
+          groupId: this.$store.state.contectuser.split("!!!")[1],
+          groupName: this.otherUserInfo.nickname,
+        },
+      }).then((res) => {
+        this.changeGroupname = true;
+        this.before_ws_send();
+      });
+    },
+    getUserInfo() {
+      if (this.contectuser.indexOf("!!!") == -1) {
+        axios({
+          url: this.baseUrl + "getUserinfo.php",
+          method: "get",
+          params: {
+            userid: this.otheruser,
+          },
+        }).then((res) => {
+          console.log("userinfo", res);
+          if (res.data.code == 200) {
+            this.otherUserInfo = res.data.data[0];
+          }
+        });
+      } else {
+        axios({
+          url: this.baseUrl + "groupList.php",
+          method: "get",
+          params: {
+            groupId: this.contectuser.split("!!!")[1],
+          },
+        }).then((res) => {
+          console.log("groupInfo", res);
+          if (res.data.code == 200) {
+            res.data.data[0].nickname = res.data.data[0].groupName;
+            res.data.data[0].usericon = res.data.data[0].groupicon;
+            this.otherUserInfo = res.data.data[0];
+          }
+        });
+      }
+    },
+    getGroupInfo(id) {
+      // var isrepeat = false;
+      // if (this.repeatGroupId.indexOf(id) != -1) {
+      //   isrepeat = true;
+      // } else {
+      //   this.repeatGroupId.push(id);
+      // }
+      return new Promise((resolve, reject) => {
+        // if (isrepeat) {
+        //   resolve(this.groupMemberInfo);
+        // } else {
+        axios({
+          url: this.baseUrl + "returnGroupM.php",
+          method: "get",
+          params: {
+            groupId: id,
+          },
+        }).then((res) => {
+          if (res) {
+            var arr = res.data.data;
+            this.groupMemberInfo = arr;
+            console.log("群成员头像", arr);
+            resolve(arr);
+          } else {
+            resolve(this.groupMemberInfo);
+          }
+        });
+        // }
+      });
+    },
+    getmessagelist() {
+      var id = this.$store.state.userid;
+      // var id = 16;
+      console.log("getmessagelist中", this.otheruser, this.groupId);
+      this.getGroupInfo(this.otheruser.split("!!!")[1]).then((ress) => {
+        axios({
+          url: this.baseUrl + "getAllMessage.php",
+          method: "get",
+          params: {
+            userid: id,
+          },
+        }).then((res) => {
+          var message = [];
+          if (res.data.code == 200) {
+            res.data.data.forEach((item) => {
+              if (item.to_userid == 0) {
+                if (item.groupId == this.otheruser.split("!!!")[1]) {
+                  // this.getGroupInfo(item.groupId).then((res) => {
+                  //   console.log("群组消息Promise", res);
+                  //   if (res != undefined) {
+                  //     res.forEach((ite) => {
+                  //       if (ite.id == item.from_userid) {
+                  //         item.from_userName = ite.nickname;
+                  //         item.from_userIcon = ite.usericon;
+                  //       }
+                  //     });
+                  //     message.push(item);
+                  //   }
+                  // });
+                  ress.forEach((ite) => {
+                    if (ite.id == item.from_userid) {
+                      item.from_userName = ite.nickname;
+                      item.from_userIcon = ite.usericon;
+                    }
+                  });
+                  message.push(item);
+                }
+              } else {
+                if (
+                  (item.from_userid == id &&
+                    item.to_userid == this.otheruser) ||
+                  (item.from_userid == this.otheruser && item.to_userid == id)
+                ) {
+                  message.push(item);
+                }
+              }
+            });
+            this.message = message;
+
+            console.log("gusss", this.message);
+            // 让滚动条始终在最底部
+            this.$nextTick(() => {
+              this.$refs.his_message.scrollTop =
+                this.$refs.his_message.scrollHeight;
+            });
+          }
+        });
+      });
+    },
     formatDate,
     emoji(index) {
       console.log("父组件", index);
@@ -196,8 +721,116 @@ export default {
         s2.substring(this.cursorIndex, len);
       this.showEmoji = false;
     },
+    //图片
     filelist(index) {
       console.log("父元素", index);
+      var userId = this.$store.state.userid;
+      // var userId = 16;
+      var to_userId = this.otherUserId;
+      var messagetype = 2;
+      if (to_userId.indexOf("!!!") != -1) {
+        var data = {
+          userid: userId,
+          groupId: to_userId.split("!!!")[1],
+          message_type: messagetype,
+          message: this.baseUrl + "upload/" + index,
+        };
+      } else {
+        var data = {
+          userid: userId,
+          to_userid: to_userId,
+          message_type: messagetype,
+          message: this.baseUrl + "upload/" + index,
+        };
+      }
+      axios({
+        url: this.baseUrl + "sendmessage.php",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "post",
+        data,
+      }).then((res) => {
+        console.log(res);
+        if (res.data.code == 200) {
+          this.textarea = "";
+          this.getmessagelist();
+          this.before_ws_send();
+        }
+      });
+    },
+    //视频
+    filelist1(index) {
+      console.log("父元素", index);
+
+      var userId = this.$store.state.userid;
+      // var userId = 16;
+      var to_userId = this.otherUserId;
+      var messagetype = 3;
+      if (to_userId.indexOf("!!!") != -1) {
+        var data = {
+          userid: userId,
+          groupId: to_userId.split("!!!")[1],
+          message_type: messagetype,
+          message: this.baseUrl + "upload/" + index[0].name,
+        };
+      } else {
+        var data = {
+          userid: userId,
+          to_userid: to_userId,
+          message_type: messagetype,
+          message: this.baseUrl + "upload/" + index[0].name,
+        };
+      }
+      axios({
+        url: this.baseUrl + "sendmessage.php",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "post",
+        data,
+      }).then((res) => {
+        console.log(res);
+        if (res.data.code == 200) {
+          this.textarea = "";
+          this.getmessagelist();
+          this.before_ws_send();
+        }
+      });
+    },
+    //文件
+    filelist2(index) {
+      console.log("父元素", index);
+      var userId = this.$store.state.userid;
+      // var userId = 16;
+      var to_userId = this.otherUserId;
+      var messagetype = 4;
+      if (to_userId.indexOf("!!!") != -1) {
+        var data = {
+          userid: userId,
+          groupId: to_userId.split("!!!")[1],
+          message_type: messagetype,
+          message: this.baseUrl + "upload/" + index[0].name,
+          message_name: index[0].name,
+        };
+      } else {
+        var data = {
+          userid: userId,
+          to_userid: to_userId,
+          message_type: messagetype,
+          message: this.baseUrl + "upload/" + index[0].name,
+          message_name: index[0].name,
+        };
+      }
+      axios({
+        url: this.baseUrl + "sendmessage.php",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "post",
+        data,
+      }).then((res) => {
+        console.log(res);
+        if (res.data.code == 200) {
+          this.textarea = "";
+          this.getmessagelist();
+          this.before_ws_send();
+        }
+      });
     },
     handleInputBlur(e) {
       this.cursorIndex = e.srcElement.selectionStart;
@@ -227,21 +860,276 @@ export default {
     },
     //计算间隔时间
     renderMessageDate(message, index) {
+      var messageTime = new Date(parseInt(message.messageTime) * 1000);
       if (index === 0) {
-        return this.formatDate(message.timestamp);
+        return this.formatDate(messageTime);
       } else {
-        if (
-          message.timestamp - this.message[index - 1].timestamp >
-          5 * 60 * 1000
-        ) {
-          return this.formatDate(message.timestamp);
+        var far_messageTime = new Date(
+          parseInt(this.message[index - 1].messageTime) * 1000
+        );
+        if (messageTime - far_messageTime > 5 * 60 * 1000) {
+          return this.formatDate(messageTime);
         }
       }
       return "";
     },
-    openimg(img) {
-      localStorage.setItem('data',img)      
-      ipcRenderer.send("newwindow");
+    openimg(data, type) {
+      if (type == "video") {
+        var options = {
+          type: "video",
+          data: data,
+        };
+        localStorage.setItem("type", "video");
+      } else if (type == "img") {
+        var options = {
+          type: "img",
+          data: data,
+        };
+        localStorage.setItem("type", "img");
+      }
+      localStorage.setItem("data", data);
+      ipcRenderer.send("newwindow", JSON.stringify(options));
+    },
+    sendmessage() {
+      var userId = this.$store.state.userid;
+      // var userId = 16;
+      var to_userId = this.otherUserId;
+      var message = this.textarea;
+      var messagetype = 1;
+      if (to_userId.indexOf("!!!") != -1) {
+        var data = {
+          userid: userId,
+          groupId: to_userId.split("!!!")[1],
+          message_type: messagetype,
+          message,
+        };
+      } else {
+        var data = {
+          userid: userId,
+          to_userid: to_userId,
+          message_type: messagetype,
+          message,
+        };
+      }
+      axios({
+        url: this.baseUrl + "sendmessage.php",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "post",
+        data,
+      }).then((res) => {
+        console.log(res);
+        if (res.data.code == 200) {
+          this.textarea = "";
+          this.getmessagelist();
+          this.before_ws_send();
+        }
+      });
+    },
+    showEdit() {
+      if (this.otherUserId.indexOf("!!!") != -1) {
+        console.log("修改群");
+        this.contGroup = true;
+      } else {
+        console.log("修改个人");
+        this.contGroup = false;
+      }
+      this.showControl = true;
+    },
+    getfriends() {
+      var id = this.$store.state.userid;
+      //   var id = 27;
+      return new Promise((resolve, rehect) => {
+        axios({
+          url: this.baseUrl + "friendlist.php",
+          method: "get",
+          params: {
+            userid: id,
+          },
+        }).then((res) => {
+          var lists = [];
+          if (res.data.code == 200) {
+            res.data.data.forEach((item) => {
+              if (item.bsq_userid != id) {
+                lists.push(item.bsq_userid);
+              } else if (item.sq_userid != id) {
+                lists.push(item.sq_userid);
+              }
+            });
+            lists = new Set(lists);
+            console.log("lists", lists);
+            var arr = [];
+            lists.forEach((item) => {
+              axios({
+                url: this.baseUrl + "getUserinfo.php",
+                method: "get",
+                params: {
+                  userid: item,
+                },
+              }).then((ress) => {
+                if (ress.code != 200) {
+                  arr.push(ress.data.data[0]);
+                }
+              });
+            });
+            this.friendlist = arr;
+            setTimeout(() => {
+              resolve(arr);
+            }, 1000);
+          }
+        });
+      });
+    },
+    getFirst(arr) {
+      setTimeout(() => {
+        arr.forEach((item) => {
+          var str = item.nickname;
+          var pystr = getSpell(
+            str,
+            (charactor, spell) => {
+              return spell[1];
+            },
+            ""
+          );
+          this.pylist.push(pystr);
+        });
+        this.createNewList();
+      }, 1000);
+    },
+    createNewList() {
+      var friendlist = [];
+      friendlist = this.pylist.sort();
+      var arr = [];
+      friendlist.forEach((item) => {
+        arr.push(item.slice(0, 1).toUpperCase());
+      });
+      var narr = new Set(arr);
+      var newfirendlist = [];
+      narr.forEach((item) => {
+        newfirendlist.push({
+          sort: item,
+          list: [],
+        });
+      });
+      newfirendlist.forEach((item) => {
+        this.friendlist.forEach((ite) => {
+          var str = ite.nickname;
+          var pystr = getSpell(
+            str,
+            (charactor, spell) => {
+              return spell[1];
+            },
+            ""
+          );
+          if (pystr.slice(0, 1).toUpperCase() == item.sort) {
+            item.list.push(ite);
+          }
+        });
+      });
+      this.afterSortList = newfirendlist;
+      console.log("排序", this.afterSortList);
+      setTimeout(() => {
+        this.getgrouplist();
+      }, 1000);
+    },
+    getgrouplist() {
+      axios({
+        url: this.baseUrl + "groupList.php",
+        method: "get",
+        params: {
+          groupId: this.contectuser.split("!!!")[1],
+        },
+      }).then((res) => {
+        if (res.data.code == 200) {
+          var list = res.data.data[0].memberUser.split(";");
+          var after = JSON.parse(JSON.stringify(this.afterSortList));
+          list.forEach((item) => {
+            this.afterSortList.forEach((ite, index) => {
+              ite.list.forEach((itt, ind) => {
+                if (item != "") {
+                  if (item == itt.id) {
+                    this.$delete(after[index].list, ind);
+                  }
+                }
+              });
+            });
+          });
+
+          after.forEach((item, index) => {
+            if (item.list.length == 0) {
+              this.$delete(after, index);
+            }
+          });
+          after.forEach((item, index) => {
+            if (item.list.length == 0) {
+              this.$delete(after, index);
+            }
+          });
+          this.afterSortList = after;
+        }
+        this.showAddMember = true;
+      });
+    },
+    editGroupMember() {
+      this.getfriends().then((res) => {
+        console.log("初始化", res);
+        setTimeout(() => {
+          this.getFirst(res);
+        }, 200);
+      });
+    },
+    showinfo(value) {
+      this.checkUser = [];
+      this.checkList.forEach((item) => {
+        this.friendlist.forEach((ite) => {
+          if (item == ite.id) {
+            console.log(ite.nickname);
+            this.checkUser.push(ite);
+          }
+        });
+      });
+      console.log(this.checkUser);
+    },
+    delSelect(index, oin) {
+      this.checkUser.splice(index, 1);
+      const list = this.checkList.filter((item) => {
+        return item != oin;
+      });
+      this.checkList = list;
+      console.log(list);
+    },
+    closeWindow() {
+      this.showAddMember = false;
+    },
+    addGroup() {
+      var str = "";
+      this.checkUser.forEach((item) => {
+        str += item.id + ";";
+      });
+      console.log(str);
+      axios({
+        url: this.baseUrl + "addGroupMem.php",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "post",
+        data: {
+          id: this.contectuser.split("!!!")[1],
+          member: str,
+        },
+      }).then((res) => {
+        console.log(res);
+        if (res.data.status == "success") {
+          this.msg = "添加成功";
+          this.show_success = true;
+          setTimeout(() => {
+            this.closeWindow();
+          }, 500);
+        } else {
+          this.msg = "添加失败";
+          this.show_err = true;
+          setTimeout(() => {
+            this.closeWindow();
+          }, 500);
+        }
+      });
     },
   },
 };
@@ -258,9 +1146,24 @@ export default {
   height: 40px;
   text-align: left;
   padding-left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   line-height: 40px;
   /* background-color: #eee; */
   border-bottom: 1px solid #d6d6d6;
+}
+.otherControl {
+  width: 20px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 20px;
+  cursor: pointer;
+}
+.otherControl > img {
+  width: 20px;
 }
 .his_message {
   height: calc(100% - 200px);
@@ -284,9 +1187,10 @@ export default {
 }
 .textar {
   width: 100% !important;
-  height: calc(100% - 120px) !important;
+  height: calc(100% - 130px) !important;
   overflow: auto;
   background-color: #f5f5f5;
+  z-index: 99;
 }
 /deep/.el-textarea__inner::-webkit-scrollbar {
   width: 10px;
@@ -381,7 +1285,6 @@ export default {
   padding: 5px 10px;
   text-align: right;
 }
-
 .send-button {
   width: 70px;
   height: 30px;
@@ -470,6 +1373,7 @@ export default {
   color: #0cd16b;
   font-size: 14px;
   background-color: #e9e9e9;
+  cursor: pointer;
 }
 .senduser {
   display: flex;
@@ -505,7 +1409,7 @@ export default {
   padding: 10px;
   background-color: #95ec69;
   border-radius: 5px;
-  z-index: 2;
+  /* z-index: 2; */
   text-align: left;
 }
 .to_message {
@@ -513,10 +1417,18 @@ export default {
   height: auto;
   padding: 10px;
   background-color: #fff;
-  z-index: 2;
+  /* z-index: 2; */
   border-radius: 5px;
 }
-
+.to_message2 {
+  width: auto;
+  height: auto;
+  padding: 10px;
+  background-color: #fff;
+  /* z-index: 2; */
+  border-radius: 5px;
+  margin-top: 12px;
+}
 .bottom_arrow_send {
   position: absolute;
   right: 45px;
@@ -531,6 +1443,16 @@ export default {
   position: absolute;
   left: 55px;
   top: 8px;
+  width: 0.75rem;
+  height: 0.75rem;
+  transform: translate(-50%, 50%) rotate(45deg);
+  background-color: #fff;
+  z-index: 1;
+}
+.bottom_arrow_to2 {
+  position: absolute;
+  left: 55px;
+  top: 19px;
   width: 0.75rem;
   height: 0.75rem;
   transform: translate(-50%, 50%) rotate(45deg);
@@ -558,5 +1480,358 @@ export default {
 }
 .imgmessage > img {
   max-width: 200px;
+}
+.imgmessage > video {
+  max-width: 200px;
+}
+.imgmessage {
+  display: flex;
+  position: relative;
+}
+.imgmessage2 {
+  display: flex;
+  position: relative;
+  margin-top: 15px;
+}
+
+.imgmessage2 > img {
+  max-width: 200px;
+}
+.imgmessage2 > video {
+  max-width: 200px;
+}
+.pause_btn {
+  position: absolute;
+  width: 50px;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+
+.content-file {
+  width: 240px;
+  height: 65px;
+  font-size: 15px;
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.content-file:hover {
+  background: #f1f1f1;
+}
+.content-file2 {
+  width: 240px;
+  height: 65px;
+  font-size: 15px;
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.content-file2:hover {
+  background: #f1f1f1;
+}
+.file-info {
+  width: 194px;
+  text-align: left;
+}
+
+.file-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  display: -webkit-box;
+  word-break: break-all;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.file-img {
+  width: 50px;
+  height: 50px;
+}
+.timestamp {
+  color: #7f7f7f;
+  font-size: 12px;
+}
+.groupMemName {
+  position: absolute;
+  left: 55px;
+  top: -5px;
+  font-size: 12px;
+}
+.hidden {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  top: 0;
+  left: 0;
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.cotBody {
+  width: 200px;
+  min-height: 100px;
+  background-color: #fff;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.cotItem {
+  width: 100%;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: red;
+  font-size: 15px;
+  cursor: pointer;
+}
+.cotItem2 {
+  width: 100%;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #000;
+  font-size: 15px;
+  cursor: pointer;
+}
+.editgroupmember {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.mainbody {
+  width: 80%;
+  height: 80%;
+  display: flex;
+
+  z-index: 99999;
+  background-color: #fff;
+}
+.friendlist {
+  width: 40%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 2px solid #f5f5f5;
+}
+/deep/.friendlist::-webkit-scrollbar {
+  width: 2px;
+}
+/deep/.friendlist::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background: #d2d2d2;
+}
+/deep/.friendlist::-webkit-scrollbar-button {
+  width: 2px;
+  border-radius: 50%;
+  background: black;
+  display: none;
+}
+.friendrow {
+  height: auto;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+}
+.sort {
+  color: #b8b7b7;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.name_img {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  width: auto;
+}
+.checkbox {
+  margin-right: 10px;
+}
+.userimg {
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+}
+.username {
+  margin-left: 15px;
+  font-size: 14px !important;
+  width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chooselist {
+  width: 60%;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px;
+}
+.chooselist > p {
+  font-size: 12px;
+  text-align: left;
+}
+.mainchoosebody {
+  height: 60%;
+  width: 100%;
+  margin-top: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.btns {
+  width: 100%;
+  display: flex;
+  margin-top: 15px;
+  justify-content: space-around;
+}
+.btnitem {
+  width: 100px;
+  height: 30px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #63c160;
+  cursor: pointer;
+  background-color: #f3f3f3;
+}
+.btnitem:first-child {
+  background-color: #ebebeb;
+  color: #9e9e9e;
+}
+.btnitem:hover {
+  background-color: #dbdbdb;
+}
+/deep/.el-checkbox__label {
+  width: 0px !important;
+  overflow: hidden;
+}
+.chooseBodyList {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.checkUserCon {
+  width: 50px;
+  position: relative;
+}
+.checkUserIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  margin: 10px;
+}
+/deep/.mainchoosebody::-webkit-scrollbar {
+  width: 2px;
+}
+/deep/.mainchoosebody::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background: #d2d2d2;
+}
+/deep/.mainchoosebody::-webkit-scrollbar-button {
+  width: 2px;
+  border-radius: 50%;
+  background: black;
+  display: none;
+}
+.checkUserName {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.closeBtn {
+  position: absolute;
+  top: 4px;
+  right: -8px;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.success {
+  background-color: #07c160 !important;
+  color: #fff !important;
+}
+.success:hover {
+  background-color: #38cd7f !important;
+  color: #fff !important;
+}
+
+.big_block {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.374);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.dialog1 {
+  position: absolute;
+  width: 180px;
+  background-color: #13c468;
+  border-radius: 5px;
+  height: 45px;
+  color: #fff;
+  text-align: center;
+  line-height: 45px;
+  font-size: 16px;
+  z-index: 99999999;
+}
+.dialog {
+  position: absolute;
+  width: 180px;
+  background-color: #fe4c38;
+  border-radius: 5px;
+  height: 45px;
+  color: #fff;
+  text-align: center;
+  line-height: 45px;
+  font-size: 16px;
+  z-index: 99999999;
+
+}
+
+/deep/ .el-input__inner {
+  width: 100%;
+  height: 30px;
+  font-size: 12px;
+  line-height: 30px;
+  margin-top: 20px;
+  float: left;
 }
 </style>

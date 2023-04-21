@@ -17,4 +17,13 @@
   margin: 0;
   padding: 0;
 }
+a {
+  text-decoration: none;
+  outline: none;
+  font-size: 20px;
+  color: #333;
+}
+.el-container {
+  overflow: hidden !important;
+}
 </style>

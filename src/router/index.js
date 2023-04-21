@@ -20,9 +20,25 @@ const routes = [
     component: () => import(/* webpackChunkName: "main" */ '../views/MainPage.vue')
   },
   {
-    path:'/test',
-    name:'test',
-    component:() => import('../views/test.vue')
+    path: '/SourceDetail',
+    name: 'test',
+    component: () => import('../views/SourceDetail.vue')
+  },
+  {
+    path: '/Addfriend',
+    component: () => import('../views/AddFriend.vue')
+  },
+  {
+    path: '/Shenqing',
+    component: () => import('../views/ShenQing.vue')
+  },
+  {
+    path: '/MyInfo',
+    component: () => import('../views/MyInfo.vue')
+  },
+  {
+    path: '/GroupAdd',
+    component: () => import('../views/AddGroup.vue')
   }
 ]
 
